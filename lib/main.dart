@@ -50,6 +50,7 @@ class _StrengthArenaAppState extends State<StrengthArenaApp> {
 
   @override
   Widget build(BuildContext context) {
+    final isAr = _locale.languageCode == 'ar';
     return MaterialApp(
       title: 'Strength Arena',
       debugShowCheckedModeBanner: false,
@@ -63,6 +64,12 @@ class _StrengthArenaAppState extends State<StrengthArenaApp> {
           surface: Color(0xFF141821),
         ),
       ),
+      builder: (context, child) {
+        return Directionality(
+          textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: const SplashStartScreen(),
     );
   }
@@ -107,6 +114,10 @@ class AppStrings {
   String get searchingOpponent => isAr
       ? 'جاري البحث عن خصم متصل في نفس التحدي...'
       : 'Searching for an online opponent in this challenge...';
+
+  String opponentFound(String name) => isAr
+      ? 'تم إيجاد الخصم: $name — جاري بدء المواجهة!'
+      : 'Opponent matched: $name — starting match!';
 
   String get aiRefereeNote => isAr
       ? 'تحكيم الذكاء الاصطناعي: الكاميرا تراقب عدّاتك فقط والخصم لا يرى الفيديو'
@@ -568,7 +579,8 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
                         const Spacer(),
                         IconButton(
                           onPressed: () => _openRankings(displayName),
-                          icon: const Icon(Icons.leaderboard_rounded, color: Color(0xFFF59E0B)),
+                          icon: const Icon(Icons.leaderboard_rounded,
+                              color: Color(0xFFF59E0B)),
                           tooltip: s.isAr ? 'الترتيب والمستويات' : 'Rankings',
                         ),
                         OutlinedButton(
@@ -592,7 +604,48 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141821).withOpacity(0.75),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text(
+                          s.isAr ? 'الفوز: $_wins' : 'Wins: $_wins',
+                          style: const TextStyle(
+                            color: Color(0xFF4ADE80),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        Text(
+                          '$_xp XP',
+                          style: const TextStyle(
+                            color: Color(0xFFF59E0B),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => _openRankings(displayName),
+                          child: Text(
+                            s.isAr ? 'عالمي والدولة ↗' : 'Global & Country ↗',
+                            style: const TextStyle(
+                              color: Color(0xFF38BDF8),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     s.challengesTitle,
                     style: const TextStyle(
@@ -708,6 +761,9 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
   RealtimeChannel? _queueChannel;
   int _elapsedSeconds = 0;
   Timer? _timer;
+  bool _navigated = false;
+  final String _mySessionId = 's_${DateTime.now().microsecondsSinceEpoch}';
+  String? _matchedOpponentName;
 
   @override
   void initState() {
@@ -723,18 +779,69 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
   void _joinQueueChannel() {
     try {
       final client = Supabase.instance.client;
-      final channel = client.channel('queue-${widget.challenge.id}');
-      channel.subscribe((status, [error]) async {
-        if (status == RealtimeSubscribeStatus.subscribed) {
-          await channel.track({
-            'name': widget.playerName,
-            'challenge': widget.challenge.id,
-            'joined_at': DateTime.now().toIso8601String(),
-          });
+      final channel = client.channel(
+        'queue-${widget.challenge.id}',
+        opts: const RealtimeChannelConfig(self: true),
+      );
+
+      void checkOpponent() {
+        if (_navigated || !mounted) return;
+        final state = channel.presenceState();
+        for (final entry in state) {
+          for (final presence in entry.presences) {
+            final payload = presence.payload;
+            final sessionId = payload['session_id']?.toString();
+            if (sessionId != null && sessionId != _mySessionId) {
+              final oppName = payload['name']?.toString() ??
+                  (AppStrings.of(context).isAr ? 'منافس متصل' : 'Online Fighter');
+              _triggerMatchStart(oppName);
+              return;
+            }
+          }
         }
-      });
+      }
+
+      channel
+        ..onPresenceSync((_) => checkOpponent())
+        ..onPresenceJoin((_) => checkOpponent())
+        ..subscribe((status, [error]) async {
+          if (status == RealtimeSubscribeStatus.subscribed) {
+            await channel.track({
+              'session_id': _mySessionId,
+              'name': widget.playerName,
+              'challenge': widget.challenge.id,
+              'joined_at': DateTime.now().toIso8601String(),
+            });
+            checkOpponent();
+          }
+        });
+
       _queueChannel = channel;
     } catch (_) {}
+  }
+
+  void _triggerMatchStart(String opponentName) {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    setState(() => _matchedOpponentName = opponentName);
+    _timer?.cancel();
+
+    final isAr = AppStrings.of(context).isAr;
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AiRefereeMatchScreen(
+            challengeType: widget.challenge.type,
+            challengeTitle: widget.challenge.title,
+            accentColor: widget.challenge.color,
+            playerName: widget.playerName,
+            isAr: isAr,
+          ),
+        ),
+      );
+    });
   }
 
   @override
@@ -817,7 +924,7 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          s.opponentLabel,
+                          _matchedOpponentName ?? s.opponentLabel,
                           style: const TextStyle(
                               color: Colors.white70, fontWeight: FontWeight.w700),
                         ),
@@ -836,7 +943,9 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
                   CircularProgressIndicator(color: widget.challenge.color),
                   const SizedBox(height: 16),
                   Text(
-                    s.searchingOpponent,
+                    _matchedOpponentName != null
+                        ? s.opponentFound(_matchedOpponentName!)
+                        : s.searchingOpponent,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
@@ -868,18 +977,7 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
                     height: 52,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AiRefereeMatchScreen(
-                              challengeType: widget.challenge.type,
-                              challengeTitle: widget.challenge.title,
-                              accentColor: widget.challenge.color,
-                              playerName: widget.playerName,
-                              isAr: s.isAr,
-                            ),
-                          ),
-                        );
+                        _triggerMatchStart(s.opponentLabel);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: widget.challenge.color,
