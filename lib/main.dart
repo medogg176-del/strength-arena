@@ -121,12 +121,9 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // خلفية رياضية فنية لشاب رياضي بإضاءة ساحة داكنة
           CustomPaint(
             painter: _AthleticSilhouettePainter(),
           ),
-
-          // تدرج لوني داكن يضمن وضوح النصوص والفخامة
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -142,8 +139,6 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
               ),
             ),
           ),
-
-          // زر تبديل اللغة في الأعلى
           SafeArea(
             child: Align(
               alignment: AlignmentDirectional.topEnd,
@@ -158,10 +153,10 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF141922).withValues(alpha: 0.85),
+                      color: const Color(0xFF141922).withOpacity(0.85),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.14),
+                        color: Colors.white.withOpacity(0.14),
                       ),
                     ),
                     child: Text(
@@ -177,8 +172,6 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
               ),
             ),
           ),
-
-          // اسم التطبيق ومؤشر التحميل السلس في الأسفل
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(28, 0, 28, 44),
@@ -191,10 +184,10 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE53935).withValues(alpha: 0.16),
+                      color: const Color(0xFFE53935).withOpacity(0.16),
                       borderRadius: BorderRadius.circular(30),
                       border: Border.all(
-                        color: const Color(0xFFE53935).withValues(alpha: 0.45),
+                        color: const Color(0xFFE53935).withOpacity(0.45),
                       ),
                     ),
                     child: Text(
@@ -226,7 +219,7 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13.5,
-                      color: Colors.white.withValues(alpha: 0.72),
+                      color: Colors.white.withOpacity(0.72),
                     ),
                   ),
                   const SizedBox(height: 26),
@@ -241,7 +234,7 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                             child: LinearProgressIndicator(
                               value: _progress.value,
                               minHeight: 5,
-                              backgroundColor: Colors.white.withValues(alpha: 0.10),
+                              backgroundColor: Colors.white.withOpacity(0.10),
                               valueColor: const AlwaysStoppedAnimation<Color>(
                                 Color(0xFFE53935),
                               ),
@@ -255,7 +248,7 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                                 ar ? 'جاري تجهيز الساحة...' : 'Preparing the arena...',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.white.withValues(alpha: 0.65),
+                                  color: Colors.white.withOpacity(0.65),
                                 ),
                               ),
                               Text(
@@ -328,7 +321,6 @@ class LoginArenaScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               children: [
-                // الشريط العلوي: لغة فقط
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -353,7 +345,7 @@ class LoginArenaScreen extends StatelessWidget {
                           color: const Color(0xFF151A24),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.14),
+                            color: Colors.white.withOpacity(0.14),
                           ),
                         ),
                         child: Text(
@@ -367,23 +359,20 @@ class LoginArenaScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const Spacer(),
-
-                // كارت متناسق ومتوازن في منتصف الشاشة
                 Container(
                   width: double.infinity,
                   constraints: const BoxConstraints(maxWidth: 420),
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF12161E).withValues(alpha: 0.94),
+                    color: const Color(0xFF12161E).withOpacity(0.94),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.10),
+                      color: Colors.white.withOpacity(0.10),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.55),
+                        color: Colors.black.withOpacity(0.55),
                         blurRadius: 28,
                         offset: const Offset(0, 14),
                       ),
@@ -397,9 +386,9 @@ class LoginArenaScreen extends StatelessWidget {
                         height: 62,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFE53935).withValues(alpha: 0.15),
+                          color: const Color(0xFFE53935).withOpacity(0.15),
                           border: Border.all(
-                            color: const Color(0xFFE53935).withValues(alpha: 0.5),
+                            color: const Color(0xFFE53935).withOpacity(0.5),
                             width: 1.5,
                           ),
                         ),
@@ -426,11 +415,10 @@ class LoginArenaScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.68),
+                          color: Colors.white.withOpacity(0.68),
                         ),
                       ),
                       const SizedBox(height: 24),
-
                       _SocialAuthButton(
                         label: ar ? 'المتابعة باستخدام Google' : 'Continue with Google',
                         icon: Icons.g_mobiledata_rounded,
@@ -442,201 +430,4 @@ class LoginArenaScreen extends StatelessWidget {
                         label: ar ? 'المتابعة باستخدام Facebook' : 'Continue with Facebook',
                         icon: Icons.facebook_rounded,
                         accentColor: const Color(0xFF1877F2),
-                        onTap: () => _showProviderNotice(context, 'Facebook'),
-                      ),
-                      const SizedBox(height: 12),
-                      _SocialAuthButton(
-                        label: ar ? 'المتابعة باستخدام X' : 'Continue with X',
-                        icon: Icons.alternate_email_rounded,
-                        accentColor: Colors.white,
-                        onTap: () => _showProviderNotice(context, 'X'),
-                      ),
-                      const SizedBox(height: 12),
-                      _SocialAuthButton(
-                        label: ar ? 'المتابعة باستخدام Apple' : 'Continue with Apple',
-                        icon: Icons.apple_rounded,
-                        accentColor: Colors.white,
-                        onTap: () => _showProviderNotice(context, 'Apple'),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Spacer(),
-
-                Text(
-                  ar
-                      ? 'حساب شخصي مرتبط بتحدياتك وترتيبك فقط'
-                      : 'Personal account tied to your challenges & rank',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.50),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialAuthButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color accentColor;
-  final VoidCallback onTap;
-
-  const _SocialAuthButton({
-    required this.label,
-    required this.icon,
-    required this.accentColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: Material(
-        color: const Color(0xFF191F2B),
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: accentColor, size: 24),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: Colors.white.withValues(alpha: 0.45),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// رسمة فنية رياضية لشاب رياضي ذي بنية عضلية متناسقة في الخلفية
-class _AthleticSilhouettePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.5;
-
-    // هالة إضاءة خلف الكتفين والجسم
-    final auraPaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(0, -0.18),
-        radius: 0.65,
-        colors: [
-          const Color(0xFFE53935).withValues(alpha: 0.24),
-          const Color(0xFFFFB300).withValues(alpha: 0.08),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, w, h));
-    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), auraPaint);
-
-    // خطوط دائرية خفيفة تعطي طابع ساحة التحدي
-    final ringPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    canvas.drawCircle(Offset(cx, h * 0.36), math.min(w, h) * 0.34, ringPaint);
-    canvas.drawCircle(Offset(cx, h * 0.36), math.min(w, h) * 0.43, ringPaint);
-
-    final bodyPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF28303F),
-          const Color(0xFF151A23),
-          const Color(0xFF0C0F14),
-        ],
-      ).createShader(Rect.fromLTWH(0, h * 0.15, w, h * 0.65));
-
-    // الرأس والرقبة
-    final headCenter = Offset(cx, h * 0.21);
-    canvas.drawCircle(headCenter, w * 0.068, bodyPaint);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(cx, h * 0.275),
-          width: w * 0.09,
-          height: h * 0.045,
-        ),
-        const Radius.circular(10),
-      ),
-      bodyPaint,
-    );
-
-    // الجذع والكتفين العريضين والخصر الرياضي المتناسق (V-taper)
-    final torso = Path()
-      ..moveTo(cx - w * 0.24, h * 0.31)
-      ..quadraticBezierTo(cx, h * 0.285, cx + w * 0.24, h * 0.31)
-      ..lineTo(cx + w * 0.14, h * 0.52)
-      ..quadraticBezierTo(cx, h * 0.545, cx - w * 0.14, h * 0.52)
-      ..close();
-    canvas.drawPath(torso, bodyPaint);
-
-    // الذراعان العضليتان
-    final leftArm = Path()
-      ..moveTo(cx - w * 0.23, h * 0.315)
-      ..quadraticBezierTo(cx - w * 0.31, h * 0.42, cx - w * 0.27, h * 0.55)
-      ..lineTo(cx - w * 0.20, h * 0.55)
-      ..quadraticBezierTo(cx - w * 0.22, h * 0.43, cx - w * 0.18, h * 0.34)
-      ..close();
-    canvas.drawPath(leftArm, bodyPaint);
-
-    final rightArm = Path()
-      ..moveTo(cx + w * 0.23, h * 0.315)
-      ..quadraticBezierTo(cx + w * 0.31, h * 0.42, cx + w * 0.27, h * 0.55)
-      ..lineTo(cx + w * 0.20, h * 0.55)
-      ..quadraticBezierTo(cx + w * 0.22, h * 0.43, cx + w * 0.18, h * 0.34)
-      ..close();
-    canvas.drawPath(rightArm, bodyPaint);
-
-    // الساقان
-    final leftLeg = RRect.fromRectAndRadius(
-      Rect.fromLTWH(cx - w * 0.135, h * 0.51, w * 0.11, h * 0.24),
-      const Radius.circular(18),
-    );
-    final rightLeg = RRect.fromRectAndRadius(
-      Rect.fromLTWH(cx + w * 0.025, h * 0.51, w * 0.11, h * 0.24),
-      const Radius.circular(18),
-    );
-    canvas.drawRRect(leftLeg, bodyPaint);
-    canvas.drawRRect(rightLeg, bodyPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+                        onTap: ()
