@@ -430,4 +430,192 @@ class LoginArenaScreen extends StatelessWidget {
                         label: ar ? 'المتابعة باستخدام Facebook' : 'Continue with Facebook',
                         icon: Icons.facebook_rounded,
                         accentColor: const Color(0xFF1877F2),
-                        onTap: ()
+                        onTap: () => _showProviderNotice(context, 'Facebook'),
+                      ),
+                      const SizedBox(height: 12),
+                      _SocialAuthButton(
+                        label: ar ? 'المتابعة باستخدام X' : 'Continue with X',
+                        icon: Icons.alternate_email_rounded,
+                        accentColor: Colors.white,
+                        onTap: () => _showProviderNotice(context, 'X'),
+                      ),
+                      const SizedBox(height: 12),
+                      _SocialAuthButton(
+                        label: ar ? 'المتابعة باستخدام Apple' : 'Continue with Apple',
+                        icon: Icons.apple_rounded,
+                        accentColor: Colors.white,
+                        onTap: () => _showProviderNotice(context, 'Apple'),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  ar
+                      ? 'حساب شخصي مرتبط بتحدياتك وترتيبك فقط'
+                      : 'Personal account tied to your challenges & rank',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.50),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SocialAuthButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _SocialAuthButton({
+    required this.label,
+    required this.icon,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: Material(
+        color: const Color(0xFF191F2B),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: accentColor, size: 24),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: Colors.white.withOpacity(0.45),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AthleticSilhouettePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final cx = w * 0.5;
+
+    final auraPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0, -0.18),
+        radius: 0.65,
+        colors: [
+          const Color(0xFFE53935).withOpacity(0.24),
+          const Color(0xFFFFB300).withOpacity(0.08),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), auraPaint);
+
+    final ringPaint = Paint()
+      ..color = Colors.white.withOpacity(0.05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    canvas.drawCircle(Offset(cx, h * 0.36), math.min(w, h) * 0.34, ringPaint);
+    canvas.drawCircle(Offset(cx, h * 0.36), math.min(w, h) * 0.43, ringPaint);
+
+    final bodyPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF28303F),
+          const Color(0xFF151A23),
+          const Color(0xFF0C0F14),
+        ],
+      ).createShader(Rect.fromLTWH(0, h * 0.15, w, h * 0.65));
+
+    final headCenter = Offset(cx, h * 0.21);
+    canvas.drawCircle(headCenter, w * 0.068, bodyPaint);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(cx, h * 0.275),
+          width: w * 0.09,
+          height: h * 0.045,
+        ),
+        const Radius.circular(10),
+      ),
+      bodyPaint,
+    );
+
+    final torso = Path()
+      ..moveTo(cx - w * 0.24, h * 0.31)
+      ..quadraticBezierTo(cx, h * 0.285, cx + w * 0.24, h * 0.31)
+      ..lineTo(cx + w * 0.14, h * 0.52)
+      ..quadraticBezierTo(cx, h * 0.545, cx - w * 0.14, h * 0.52)
+      ..close();
+    canvas.drawPath(torso, bodyPaint);
+
+    final leftArm = Path()
+      ..moveTo(cx - w * 0.23, h * 0.315)
+      ..quadraticBezierTo(cx - w * 0.31, h * 0.42, cx - w * 0.27, h * 0.55)
+      ..lineTo(cx - w * 0.20, h * 0.55)
+      ..quadraticBezierTo(cx - w * 0.22, h * 0.43, cx - w * 0.18, h * 0.34)
+      ..close();
+    canvas.drawPath(leftArm, bodyPaint);
+
+    final rightArm = Path()
+      ..moveTo(cx + w * 0.23, h * 0.315)
+      ..quadraticBezierTo(cx + w * 0.31, h * 0.42, cx + w * 0.27, h * 0.55)
+      ..lineTo(cx + w * 0.20, h * 0.55)
+      ..quadraticBezierTo(cx + w * 0.22, h * 0.43, cx + w * 0.18, h * 0.34)
+      ..close();
+    canvas.drawPath(rightArm, bodyPaint);
+
+    final leftLeg = RRect.fromRectAndRadius(
+      Rect.fromLTWH(cx - w * 0.135, h * 0.51, w * 0.11, h * 0.24),
+      const Radius.circular(18),
+    );
+    final rightLeg = RRect.fromRectAndRadius(
+      Rect.fromLTWH(cx + w * 0.025, h * 0.51, w * 0.11, h * 0.24),
+      const Radius.circular(18),
+    );
+    canvas.drawRRect(leftLeg, bodyPaint);
+    canvas.drawRRect(rightLeg, bodyPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
