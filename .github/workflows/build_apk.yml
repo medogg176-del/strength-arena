@@ -24,17 +24,35 @@ jobs:
           flutter create . --project-name strength_arena --platforms=android --org com.strengtharena
           python3 -c '
           from pathlib import Path
-          import glob
+          import glob, re
 
-          print("Gradle files:", glob.glob("android/**/*gradle*", recursive=True))
+          # 1. تحديث Gradle Wrapper إلى 8.4
+          wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
+          if wrapper.exists():
+              wtxt = wrapper.read_text(encoding="utf-8")
+              wtxt = re.sub(r"gradle-[0-9.]+-(all|bin)\.zip", "gradle-8.4-bin.zip", wtxt)
+              wrapper.write_text(wtxt, encoding="utf-8")
 
+          # 2. ضبط ext في android/build.gradle وتحديث AGP و Kotlin
           root_gradle = Path("android/build.gradle")
           if root_gradle.exists():
               txt = root_gradle.read_text(encoding="utf-8")
               ext_block = "ext {\n    compileSdkVersion = 34\n    minSdkVersion = 21\n    targetSdkVersion = 34\n}\n\n"
               if "compileSdkVersion = 34" not in txt:
-                  root_gradle.write_text(ext_block + txt, encoding="utf-8")
+                  txt = ext_block + txt
+              txt = re.sub(r"com\.android\.tools\.build:gradle:[0-9.+]+", "com.android.tools.build:gradle:8.3.2", txt)
+              txt = re.sub(r"org\.jetbrains\.kotlin:kotlin-gradle-plugin:[0-9.+]+", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24", txt)
+              root_gradle.write_text(txt, encoding="utf-8")
 
+          # 3. تحديث AGP / Kotlin في settings.gradle لو موجودة بصيغة plugins
+          for sfile in glob.glob("android/settings.gradle*"):
+              sp = Path(sfile)
+              stxt = sp.read_text(encoding="utf-8")
+              stxt = re.sub(r"id\s+[\"\x27]com\.android\.application[\"\x27]\s+version\s+[\"\x27][0-9.+]+[\"\x27]", "id \"com.android.application\" version \"8.3.2\" apply false", stxt)
+              stxt = re.sub(r"id\s+[\"\x27]org\.jetbrains\.kotlin\.android[\"\x27]\s+version\s+[\"\x27][0-9.+]+[\"\x27]", "id \"org.jetbrains.kotlin.android\" version \"1.9.24\" apply false", stxt)
+              sp.write_text(stxt, encoding="utf-8")
+
+          # 4. ضبط SDK في كل ملفات build.gradle
           for path_str in glob.glob("android/**/build.gradle*", recursive=True):
               p = Path(path_str)
               txt = p.read_text(encoding="utf-8")
