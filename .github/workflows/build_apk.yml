@@ -22,12 +22,43 @@ jobs:
         run: |
           rm -rf android
           flutter create . --project-name strength_arena --platforms=android --org com.strengtharena
+          flutter pub add app_links:^6.3.2
           python3 -c '
-          p = "android/app/build.gradle"
-          s = open(p).read()
-          if "compileSdkVersion" not in s:
-              s = s.replace("android {", "android {\n    compileSdkVersion 34", 1)
-          open(p, "w").write(s)
+          import glob, re
+
+          # ضبط compileSdkVersion و minSdkVersion في ملفات build.gradle
+          for path in glob.glob("android/**/build.gradle*", recursive=True):
+              txt = open(path).read()
+              if path.endswith(".kts"):
+                  txt = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", "compileSdk = 34", txt)
+                  txt = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 21", txt)
+              else:
+                  txt = re.sub(r"compileSdkVersion\s+flutter\.compileSdkVersion", "compileSdkVersion 34", txt)
+                  txt = re.sub(r"compileSdk\s+flutter\.compileSdkVersion", "compileSdk 34", txt)
+                  txt = re.sub(r"minSdkVersion\s+flutter\.minSdkVersion", "minSdkVersion 21", txt)
+                  txt = re.sub(r"minSdk\s+flutter\.minSdkVersion", "minSdk 21", txt)
+              open(path, "w").write(txt)
+
+          # ضمان وجود compileSdkVersion 34 لأي subproject مثل :app_links
+          root_gradle = "android/build.gradle"
+          with open(root_gradle, "r") as f:
+              root_txt = f.read()
+          hook = """
+          subprojects { sub ->
+              afterEvaluate { project ->
+                  if (project.hasProperty("android")) {
+                      project.android {
+                          if (compileSdkVersion == null) {
+                              compileSdkVersion 34
+                          }
+                      }
+                  }
+              }
+          }
+          """
+          if "project.hasProperty(\"android\")" not in root_txt:
+              with open(root_gradle, "w") as f:
+                  f.write(root_txt + "\n" + hook)
           '
           flutter pub get
           flutter build apk --release
