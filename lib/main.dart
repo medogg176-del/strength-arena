@@ -250,3 +250,196 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
             updateCount();
           }
         });
+
+      _channel = channel;
+    } catch (_) {
+      if (mounted) {
+        setState(() => _onlineCount = 0);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_channel != null) {
+      try {
+        Supabase.instance.client.removeChannel(_channel!);
+      } catch (_) {}
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final challenges = [
+      _ChallengeCardData(
+        title: 'تحدي الضغط',
+        subtitle: 'نزول كامل وزاوية كوع مضبوطة مع ثبات الجسم',
+        color: const Color(0xFFFF5A1F),
+        icon: Icons.fitness_center_rounded,
+      ),
+      _ChallengeCardData(
+        title: 'تحدي العقلة',
+        subtitle: 'صعود واضح للذقن وفرد الذراعين بالكامل بدون غش',
+        color: const Color(0xFF38BDF8),
+        icon: Icons.accessibility_new_rounded,
+      ),
+      _ChallengeCardData(
+        title: 'تحدي البطن',
+        subtitle: 'حركة جذع واضحة نحو الركبتين بدون تحايل',
+        color: const Color(0xFF22C55E),
+        icon: Icons.sports_gymnastics_rounded,
+      ),
+    ];
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF141821),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'التحديات',
+                      style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E).withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF22C55E).withOpacity(0.35),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF22C55E),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$_onlineCount أونلاين',
+                            style: const TextStyle(
+                              color: Color(0xFF4ADE80),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: challenges.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (context, index) {
+                    final item = challenges[index];
+                    return InkWell(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('تم اختيار ${item.title} — جاهز لخطوة الكاميرا والـ 1v1'),
+                            backgroundColor: const Color(0xFF1E2433),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141821),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: item.color.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: item.color.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(item.icon, color: item.color, size: 28),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    item.subtitle,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: item.color,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChallengeCardData {
+  final String title;
+  final String subtitle;
+  final Color color;
+  final IconData icon;
+
+  const _ChallengeCardData({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.icon,
+  });
+}
