@@ -43,7 +43,7 @@ class StrengthArenaApp extends StatelessWidget {
   }
 }
 
-/// شاشة البداية: صورة كمال الأجسام + تحميل ثانية أو ثانيتين + زر "بدء"
+/// شاشة البداية: صورة كمال الأجسام + تحميل ثانيتين + زر "بدء"
 class SplashStartScreen extends StatefulWidget {
   const SplashStartScreen({super.key});
 
@@ -247,4 +247,125 @@ class ChallengesHomeScreen extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   const Color(0xFF0A0C10).withOpacity(0.84),
-                  const Color(0xFF
+                  const Color(0xFF0A0C10).withOpacity(0.95),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141821).withOpacity(0.92),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: const Text(
+                      'التحديات',
+                      style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: challenges.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
+                        final item = challenges[index];
+                        return InkWell(
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('تم اختيار ${item.title} — جاهز لخطوة الكاميرا والـ 1v1'),
+                                backgroundColor: const Color(0xFF1E2433),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF141821).withOpacity(0.92),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: item.color.withOpacity(0.35)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: item.color.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Icon(item.icon, color: item.color, size: 28),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.title,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        item.subtitle,
+                                        style: const TextStyle(
+                                          fontSize: 12.5,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  color: item.color,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChallengeCardData {
+  final String title;
+  final String subtitle;
+  final Color color;
+  final IconData icon;
+
+  const _ChallengeCardData({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.icon,
+  });
+}
