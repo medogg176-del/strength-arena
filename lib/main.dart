@@ -1,22 +1,24 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const String kSupabaseUrl = 'https://onxvcxnmrtidgzuokyds.supabase.co';
-const String kSupabasePublishableKey = 'sb_publishable_inibW7-1N98La8CGVZ5OgA__700dgod';
-const String kRedirectUrl = 'io.supabase.strengtharena://login-callback';
+const String kSupabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: kSupabaseUrl,
-    anonKey: kSupabasePublishableKey,
-  );
+  try {
+    await Supabase.initialize(
+      url: kSupabaseUrl,
+      anonKey: kSupabaseAnonKey,
+    );
+  } catch (_) {
+    // يسمح بفتح الواجهة حتى لو لم يُضبط مفتاح Supabase بعد
+  }
 
   runApp(const StrengthArenaApp());
 }
-
-final supabase = Supabase.instance.client;
 
 class StrengthArenaApp extends StatelessWidget {
   const StrengthArenaApp({super.key});
@@ -26,291 +28,418 @@ class StrengthArenaApp extends StatelessWidget {
     return MaterialApp(
       title: 'Strength Arena',
       debugShowCheckedModeBanner: false,
-      home: StreamBuilder<AuthState>(
-        stream: supabase.auth.onAuthStateChange,
-        builder: (context, snapshot) {
-          final session = supabase.auth.currentSession;
-          if (session != null) {
-            return const ArenaHomeScreen();
-          }
-          return const LoginScreen();
-        },
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0A0C10),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFFF5A1F),
+          secondary: Color(0xFF22C55E),
+          surface: Color(0xFF141821),
+        ),
       ),
+      home: const SplashStartScreen(),
     );
   }
 }
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+/// شاشة البداية: صورة كمال الأجسام + تحميل ثانية أو ثانيتين + زر "بدء"
+class SplashStartScreen extends StatefulWidget {
+  const SplashStartScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SplashStartScreen> createState() => _SplashStartScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
-
-  Future<void> _signInWithEmail() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    if (email.isEmpty || password.isEmpty) return;
-
-    setState(() => _isLoading = true);
-    try {
-      final response = await supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-      if (response.user != null) {
-        await _ensureProfileExists(response.user!, providerName: 'email');
-      }
-    } on AuthException catch (e) {
-      _showMsg(e.message);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _signUpWithEmail() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    if (email.isEmpty || password.isEmpty) return;
-
-    setState(() => _isLoading = true);
-    try {
-      final response = await supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
-      if (response.user != null) {
-        await _ensureProfileExists(response.user!, providerName: 'email');
-      }
-      _showMsg(
-          'تم إرسال طلب التسجيل، راجع بريدك الإلكتروني إذا كان التفعيل مطلوباً.');
-    } on AuthException catch (e) {
-      _showMsg(e.message);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _signInWithOAuth(OAuthProvider provider) async {
-    setState(() => _isLoading = true);
-    try {
-      await supabase.auth.signInWithOAuth(
-        provider,
-        redirectTo: kRedirectUrl,
-      );
-    } on AuthException catch (e) {
-      _showMsg(e.message);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _ensureProfileExists(
-    User user, {
-    required String providerName,
-  }) async {
-    final existing = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-    if (existing == null) {
-      await supabase.from('profiles').insert({
-        'id': user.id,
-        'email': user.email,
-        'full_name':
-            user.userMetadata?['full_name'] ?? user.email?.split('@').first,
-        'provider': providerName,
-      });
-    }
-  }
-
-  void _showMsg(String text) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
-  }
+class _SplashStartScreenState extends State<SplashStartScreen> {
+  bool _isLoading = true;
+  bool _showStartButton = false;
 
   @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _runIntro();
+  }
+
+  Future<void> _runIntro() async {
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _showStartButton = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Strength Arena - Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/physique.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: const Color(0xFF12161F),
+              child: const Center(
+                child: Icon(
+                  Icons.fitness_center_rounded,
+                  size: 76,
+                  color: Color(0xFFFF5A1F),
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.20),
+                  Colors.black.withOpacity(0.55),
+                  Colors.black.withOpacity(0.94),
+                ],
+                stops: const [0.0, 0.55, 1.0],
+              ),
             ),
-            const SizedBox(height: 16),
-            if (_isLoading)
-              const CircularProgressIndicator()
-            else ...[
-              Row(
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 36),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _signInWithEmail,
-                      child: const Text('Sign In'),
+                  const Text(
+                    'STRENGTH ARENA',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.4,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _signUpWithEmail,
-                      child: const Text('Sign Up'),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '1v1 • ضغط • عقلة • بطن',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFCBD5E1),
                     ),
+                  ),
+                  const SizedBox(height: 28),
+                  if (_isLoading)
+                    const Column(
+                      children: [
+                        SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.8,
+                            color: Color(0xFFFF5A1F),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'جاري التحميل...',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  AnimatedOpacity(
+                    opacity: _showStartButton ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 350),
+                    child: _showStartButton
+                        ? SizedBox(
+                            width: double.infinity,
+                            height: 58,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ChallengesHomeScreen(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF5A1F),
+                                foregroundColor: Colors.white,
+                                elevation: 10,
+                                shadowColor: const Color(0xFFFF5A1F).withOpacity(0.5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'بدء',
+                                    style: TextStyle(
+                                      fontSize: 21,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.play_arrow_rounded, size: 26),
+                                ],
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                 ],
               ),
-              const Divider(height: 32),
-              ElevatedButton.icon(
-                onPressed: () => _signInWithOAuth(OAuthProvider.facebook),
-                icon: const Icon(Icons.facebook),
-                label: const Text('Continue with Facebook'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// شاشة التحديات الرئيسية مع عدّاد الأونلاين الحقيقي
+class ChallengesHomeScreen extends StatefulWidget {
+  const ChallengesHomeScreen({super.key});
+
+  @override
+  State<ChallengesHomeScreen> createState() => _ChallengesHomeScreenState();
+}
+
+class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
+  RealtimeChannel? _channel;
+  int _onlineCount = 0;
+  final String _sessionId = 'u_${DateTime.now().microsecondsSinceEpoch}';
+
+  @override
+  void initState() {
+    super.initState();
+    _connectPresence();
+  }
+
+  void _connectPresence() {
+    try {
+      final client = Supabase.instance.client;
+      final channel = client.channel(
+        'online-arena',
+        opts: const RealtimeChannelConfig(self: true),
+      );
+
+      void updateCount() {
+        final state = channel.presenceState();
+        int total = 0;
+        for (final entry in state) {
+          total += entry.presences.length;
+        }
+        if (mounted) {
+          setState(() => _onlineCount = total);
+        }
+      }
+
+      channel
+        ..onPresenceSync((_) => updateCount())
+        ..onPresenceJoin((_) => updateCount())
+        ..onPresenceLeave((_) => updateCount())
+        ..subscribe((status, [error]) async {
+          if (status == RealtimeSubscribeStates.subscribed) {
+            await channel.track({
+              'session_id': _sessionId,
+              'at': DateTime.now().toIso8601String(),
+            });
+            updateCount();
+          }
+        });
+
+      _channel = channel;
+    } catch (_) {
+      if (mounted) {
+        setState(() => _onlineCount = 0);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_channel != null) {
+      try {
+        Supabase.instance.client.removeChannel(_channel!);
+      } catch (_) {}
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final challenges = [
+      _ChallengeCardData(
+        title: 'تحدي الضغط',
+        subtitle: 'نزول كامل وزاوية كوع مضبوطة مع ثبات الجسم',
+        color: const Color(0xFFFF5A1F),
+        icon: Icons.fitness_center_rounded,
+      ),
+      _ChallengeCardData(
+        title: 'تحدي العقلة',
+        subtitle: 'صعود واضح للذقن وفرد الذراعين بالكامل بدون غش',
+        color: const Color(0xFF38BDF8),
+        icon: Icons.accessibility_new_rounded,
+      ),
+      _ChallengeCardData(
+        title: 'تحدي البطن',
+        subtitle: 'حركة جذع واضحة نحو الركبتين بدون تحايل',
+        color: const Color(0xFF22C55E),
+        icon: Icons.sports_gymnastics_rounded,
+      ),
+    ];
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF141821),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'التحديات',
+                      style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E).withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF22C55E).withOpacity(0.35),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF22C55E),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$_onlineCount أونلاين',
+                            style: const TextStyle(
+                              color: Color(0xFF4ADE80),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: () => _signInWithOAuth(OAuthProvider.twitter),
-                icon: const Icon(Icons.alternate_email),
-                label: const Text('Continue with X / Twitter'),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: challenges.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (context, index) {
+                    final item = challenges[index];
+                    return InkWell(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('تم اختيار ${item.title} — جاهز لخطوة الكاميرا والـ 1v1'),
+                            backgroundColor: const Color(0xFF1E2433),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141821),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: item.color.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: item.color.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(item.icon, color: item.color, size: 28),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    item.subtitle,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: item.color,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class ArenaHomeScreen extends StatefulWidget {
-  const ArenaHomeScreen({super.key});
+class _ChallengeCardData {
+  final String title;
+  final String subtitle;
+  final Color color;
+  final IconData icon;
 
-  @override
-  State<ArenaHomeScreen> createState() => _ArenaHomeScreenState();
-}
-
-class _ArenaHomeScreenState extends State<ArenaHomeScreen> {
-  Map<String, dynamic>? _profile;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
-    final providerFromMeta =
-        user.appMetadata['provider'] as String? ?? 'email';
-
-    var data = await supabase
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .maybeSingle();
-
-    if (data == null) {
-      data = await supabase
-          .from('profiles')
-          .insert({
-            'id': user.id,
-            'email': user.email,
-            'full_name':
-                user.userMetadata?['full_name'] ?? user.email?.split('@').first,
-            'provider': providerFromMeta,
-          })
-          .select()
-          .single();
-    }
-
-    if (mounted) {
-      setState(() => _profile = data);
-    }
-  }
-
-  Future<void> _addXpAndWin() async {
-    if (_profile == null) return;
-    final newXp = (_profile!['xp'] as int? ?? 0) + 50;
-    final newWins = (_profile!['wins'] as int? ?? 0) + 1;
-    final newLevel = (newXp ~/ 100) + 1;
-
-    final updated = await supabase
-        .from('profiles')
-        .update({
-          'xp': newXp,
-          'wins': newWins,
-          'level': newLevel,
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', _profile!['id'])
-        .select()
-        .single();
-
-    if (mounted) {
-      setState(() => _profile = updated);
-    }
-  }
-
-  Future<void> _signOut() async {
-    await supabase.auth.signOut();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final p = _profile;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Strength Arena'),
-        actions: [
-          IconButton(onPressed: _signOut, icon: const Icon(Icons.logout)),
-        ],
-      ),
-      body: p == null
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Name: ${p['full_name'] ?? '-'}'),
-                  Text('Email: ${p['email'] ?? '-'}'),
-                  Text('Provider: ${p['provider'] ?? '-'}'),
-                  Text('Country: ${p['country'] ?? 'EG'}'),
-                  const SizedBox(height: 12),
-                  Text('XP: ${p['xp']}'),
-                  Text('Level: ${p['level']}'),
-                  Text('Wins: ${p['wins']}'),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _addXpAndWin,
-                    child: const Text('+50 XP & +1 Win'),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
+  const _ChallengeCardData({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.icon,
+  });
 }
