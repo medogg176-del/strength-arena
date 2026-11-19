@@ -26,14 +26,12 @@ jobs:
           from pathlib import Path
           import glob, re
 
-          # 1. تحديث Gradle Wrapper إلى 8.4
           wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
           if wrapper.exists():
               wtxt = wrapper.read_text(encoding="utf-8")
               wtxt = re.sub(r"gradle-[0-9.]+-(all|bin)\.zip", "gradle-8.4-bin.zip", wtxt)
               wrapper.write_text(wtxt, encoding="utf-8")
 
-          # 2. ضبط ext في android/build.gradle وتحديث AGP و Kotlin
           root_gradle = Path("android/build.gradle")
           if root_gradle.exists():
               txt = root_gradle.read_text(encoding="utf-8")
@@ -44,7 +42,6 @@ jobs:
               txt = re.sub(r"org\.jetbrains\.kotlin:kotlin-gradle-plugin:[0-9.+]+", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24", txt)
               root_gradle.write_text(txt, encoding="utf-8")
 
-          # 3. تحديث AGP / Kotlin في settings.gradle لو موجودة بصيغة plugins
           for sfile in glob.glob("android/settings.gradle*"):
               sp = Path(sfile)
               stxt = sp.read_text(encoding="utf-8")
@@ -52,24 +49,28 @@ jobs:
               stxt = re.sub(r"id\s+[\"\x27]org\.jetbrains\.kotlin\.android[\"\x27]\s+version\s+[\"\x27][0-9.+]+[\"\x27]", "id \"org.jetbrains.kotlin.android\" version \"1.9.24\" apply false", stxt)
               sp.write_text(stxt, encoding="utf-8")
 
-          # 4. ضبط SDK في كل ملفات build.gradle
           for path_str in glob.glob("android/**/build.gradle*", recursive=True):
               p = Path(path_str)
               txt = p.read_text(encoding="utf-8")
-              if p.suffix == ".kts":
-                  txt = txt.replace("flutter.compileSdkVersion", "34")
-                  txt = txt.replace("flutter.minSdkVersion", "21")
-                  txt = txt.replace("flutter.targetSdkVersion", "34")
-              else:
-                  txt = txt.replace("compileSdk flutter.compileSdkVersion", "compileSdkVersion 34")
-                  txt = txt.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 34")
-                  txt = txt.replace("minSdk flutter.minSdkVersion", "minSdkVersion 21")
-                  txt = txt.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 21")
-                  txt = txt.replace("targetSdk flutter.targetSdkVersion", "targetSdkVersion 34")
-                  txt = txt.replace("targetSdkVersion flutter.targetSdkVersion", "targetSdkVersion 34")
+              txt = txt.replace("flutter.compileSdkVersion", "34")
+              txt = txt.replace("flutter.minSdkVersion", "21")
+              txt = txt.replace("flutter.targetSdkVersion", "34")
               p.write_text(txt, encoding="utf-8")
           '
           flutter pub get
+          python3 -c '
+          from pathlib import Path
+          import glob
+
+          for p_str in glob.glob("/home/runner/.pub-cache/hosted/pub.dev/app_links-*/android/build.gradle"):
+              p = Path(p_str)
+              txt = p.read_text(encoding="utf-8")
+              txt = txt.replace("flutter.compileSdkVersion", "34")
+              txt = txt.replace("flutter.minSdkVersion", "21")
+              txt = txt.replace("flutter.targetSdkVersion", "34")
+              p.write_text(txt, encoding="utf-8")
+              print("Patched:", p)
+          '
           flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
