@@ -22,26 +22,40 @@ jobs:
         run: |
           rm -rf android
           flutter create . --project-name strength_arena --platforms=android --org com.strengtharena
-          flutter pub add app_links:^6.3.2
+          flutter pub add app_links:latest
           python3 -c '
           import glob, re
 
-          for path in glob.glob("android/**/build.gradle*", recursive=True):
+          # 1. إضافة ext في android/build.gradle لضمان توفر compileSdkVersion لكل الـ modules
+          root_gradle = "android/build.gradle"
+          with open(root_gradle, "r", encoding="utf-8") as f:
+              root_txt = f.read()
+
+          ext_block = """buildscript {
+              ext {
+                  compileSdkVersion = 34
+                  minSdkVersion = 21
+                  targetSdkVersion = 34
+              }
+          }
+          """
+          if "compileSdkVersion = 34" not in root_txt:
+              with open(root_gradle, "w", encoding="utf-8") as f:
+                  f.write(ext_block + "\n" + root_txt)
+
+          # 2. ضبط compileSdk و minSdk في ملفات build.gradle الخاصة بالتطبيق
+          for path in glob.glob("android/app/build.gradle*", recursive=True):
               with open(path, "r", encoding="utf-8") as f:
                   txt = f.read()
 
               if path.endswith(".kts"):
                   txt = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", "compileSdk = 34", txt)
                   txt = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 21", txt)
-                  if "compileSdk =" not in txt and "android {" in txt:
-                      txt = txt.replace("android {", "android {\n    compileSdk = 34", 1)
               else:
                   txt = re.sub(r"compileSdkVersion\s*=?\s*flutter\.compileSdkVersion", "compileSdkVersion 34", txt)
-                  txt = re.sub(r"compileSdk\s*=?\s*flutter\.compileSdkVersion", "compileSdk 34", txt)
+                  txt = re.sub(r"compileSdk\s*=?\s*flutter\.compileSdkVersion", "compileSdkVersion 34", txt)
                   txt = re.sub(r"minSdkVersion\s*=?\s*flutter\.minSdkVersion", "minSdkVersion 21", txt)
-                  txt = re.sub(r"minSdk\s*=?\s*flutter\.minSdkVersion", "minSdk 21", txt)
-                  if "compileSdkVersion" not in txt and "compileSdk " not in txt and "android {" in txt:
-                      txt = txt.replace("android {", "android {\n    compileSdkVersion 34", 1)
+                  txt = re.sub(r"minSdk\s*=?\s*flutter\.minSdkVersion", "minSdkVersion 21", txt)
 
               with open(path, "w", encoding="utf-8") as f:
                   f.write(txt)
