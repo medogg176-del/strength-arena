@@ -22,46 +22,39 @@ jobs:
         run: |
           rm -rf android
           flutter create . --project-name strength_arena --platforms=android --org com.strengtharena
-          flutter pub add app_links:^6.3.2
           python3 -c '
-          import glob, re
+          from pathlib import Path
 
-          # 1. ضبط ext في android/build.gradle
-          for root_gradle in glob.glob("android/build.gradle*"):
-              with open(root_gradle, "r", encoding="utf-8") as f:
-                  txt = f.read()
-              if not root_gradle.endswith(".kts") and "compileSdkVersion" not in txt:
-                  ext_block = "ext {\n    compileSdkVersion = 34\n    minSdkVersion = 21\n    targetSdkVersion = 34\n}\n"
-                  if "allprojects {" in txt:
-                      txt = txt.replace("allprojects {", ext_block + "\nallprojects {", 1)
-                  else:
-                      txt = ext_block + "\n" + txt
-                  with open(root_gradle, "w", encoding="utf-8") as f:
-                      f.write(txt)
+          # ضبط android/build.gradle
+          root_gradle = Path("android/build.gradle")
+          if root_gradle.exists():
+              text = root_gradle.read_text(encoding="utf-8")
+              ext_snippet = """buildscript {
+                  ext {
+                      compileSdkVersion = 34
+                      minSdkVersion = 21
+                      targetSdkVersion = 34
+                  }
+              }
+              """
+              if "compileSdkVersion = 34" not in text:
+                  root_gradle.write_text(ext_snippet + "\n" + text, encoding="utf-8")
 
-          # 2. استبدال أي إشارة لـ flutter.compileSdkVersion أو flutter.minSdkVersion في كل ملفات gradle
-          for path in glob.glob("android/**/build.gradle*", recursive=True):
-              with open(path, "r", encoding="utf-8") as f:
-                  txt = f.read()
-
-              txt = re.sub(r"compileSdkVersion\s*=?\s*flutter\.compileSdkVersion", "compileSdkVersion 34", txt)
-              txt = re.sub(r"compileSdk\s*=?\s*flutter\.compileSdkVersion", "compileSdk = 34" if path.endswith(".kts") else "compileSdkVersion 34", txt)
-              txt = re.sub(r"minSdkVersion\s*=?\s*flutter\.minSdkVersion", "minSdkVersion 21", txt)
-              txt = re.sub(r"minSdk\s*=?\s*flutter\.minSdkVersion", "minSdk = 21" if path.endswith(".kts") else "minSdkVersion 21", txt)
-
-              with open(path, "w", encoding="utf-8") as f:
-                  f.write(txt)
-
-          # 3. التحقق من أن android/app/build.gradle يحتوي على 34
-          for app_gradle in glob.glob("android/app/build.gradle*"):
-              with open(app_gradle, "r", encoding="utf-8") as f:
-                  txt = f.read()
-              if "34" not in txt and "android {" in txt:
-                  line = "    compileSdk = 34\n" if app_gradle.endswith(".kts") else "    compileSdkVersion 34\n"
-                  txt = txt.replace("android {\n", "android {\n" + line, 1)
-                  with open(app_gradle, "w", encoding="utf-8") as f:
-                      f.write(txt)
-              print("Checked:", app_gradle)
+          # ضبط android/app/build.gradle
+          app_gradle = Path("android/app/build.gradle")
+          if app_gradle.exists():
+              text = app_gradle.read_text(encoding="utf-8")
+              text = text.replace("compileSdk flutter.compileSdkVersion", "compileSdk 34")
+              text = text.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 34")
+              text = text.replace("minSdk flutter.minSdkVersion", "minSdk 21")
+              text = text.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 21")
+              text = text.replace("targetSdk flutter.targetSdkVersion", "targetSdk 34")
+              text = text.replace("targetSdkVersion flutter.targetSdkVersion", "targetSdkVersion 34")
+              if "compileSdkVersion 34" not in text and "compileSdk 34" not in text:
+                  text = text.replace("android {", "android {\n    compileSdkVersion 34", 1)
+              app_gradle.write_text(text, encoding="utf-8")
+              print("--- android/app/build.gradle ---")
+              print(text)
           '
           flutter pub get
           flutter build apk --release
