@@ -24,37 +24,32 @@ jobs:
           flutter create . --project-name strength_arena --platforms=android --org com.strengtharena
           python3 -c '
           from pathlib import Path
+          import glob
 
-          # ضبط android/build.gradle
+          print("Gradle files:", glob.glob("android/**/*gradle*", recursive=True))
+
           root_gradle = Path("android/build.gradle")
           if root_gradle.exists():
-              text = root_gradle.read_text(encoding="utf-8")
-              ext_snippet = """buildscript {
-                  ext {
-                      compileSdkVersion = 34
-                      minSdkVersion = 21
-                      targetSdkVersion = 34
-                  }
-              }
-              """
-              if "compileSdkVersion = 34" not in text:
-                  root_gradle.write_text(ext_snippet + "\n" + text, encoding="utf-8")
+              txt = root_gradle.read_text(encoding="utf-8")
+              ext_block = "ext {\n    compileSdkVersion = 34\n    minSdkVersion = 21\n    targetSdkVersion = 34\n}\n\n"
+              if "compileSdkVersion = 34" not in txt:
+                  root_gradle.write_text(ext_block + txt, encoding="utf-8")
 
-          # ضبط android/app/build.gradle
-          app_gradle = Path("android/app/build.gradle")
-          if app_gradle.exists():
-              text = app_gradle.read_text(encoding="utf-8")
-              text = text.replace("compileSdk flutter.compileSdkVersion", "compileSdk 34")
-              text = text.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 34")
-              text = text.replace("minSdk flutter.minSdkVersion", "minSdk 21")
-              text = text.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 21")
-              text = text.replace("targetSdk flutter.targetSdkVersion", "targetSdk 34")
-              text = text.replace("targetSdkVersion flutter.targetSdkVersion", "targetSdkVersion 34")
-              if "compileSdkVersion 34" not in text and "compileSdk 34" not in text:
-                  text = text.replace("android {", "android {\n    compileSdkVersion 34", 1)
-              app_gradle.write_text(text, encoding="utf-8")
-              print("--- android/app/build.gradle ---")
-              print(text)
+          for path_str in glob.glob("android/**/build.gradle*", recursive=True):
+              p = Path(path_str)
+              txt = p.read_text(encoding="utf-8")
+              if p.suffix == ".kts":
+                  txt = txt.replace("flutter.compileSdkVersion", "34")
+                  txt = txt.replace("flutter.minSdkVersion", "21")
+                  txt = txt.replace("flutter.targetSdkVersion", "34")
+              else:
+                  txt = txt.replace("compileSdk flutter.compileSdkVersion", "compileSdkVersion 34")
+                  txt = txt.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 34")
+                  txt = txt.replace("minSdk flutter.minSdkVersion", "minSdkVersion 21")
+                  txt = txt.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 21")
+                  txt = txt.replace("targetSdk flutter.targetSdkVersion", "targetSdkVersion 34")
+                  txt = txt.replace("targetSdkVersion flutter.targetSdkVersion", "targetSdkVersion 34")
+              p.write_text(txt, encoding="utf-8")
           '
           flutter pub get
           flutter build apk --release
