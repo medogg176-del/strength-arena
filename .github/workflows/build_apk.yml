@@ -22,11 +22,10 @@ jobs:
         run: |
           rm -rf android
           flutter create . --project-name strength_arena --platforms=android --org com.strengtharena
-          flutter pub add app_links:latest
+          flutter pub add app_links
           python3 -c '
           import glob, re
 
-          # 1. إضافة ext في android/build.gradle لضمان توفر compileSdkVersion لكل الـ modules
           root_gradle = "android/build.gradle"
           with open(root_gradle, "r", encoding="utf-8") as f:
               root_txt = f.read()
@@ -43,7 +42,6 @@ jobs:
               with open(root_gradle, "w", encoding="utf-8") as f:
                   f.write(ext_block + "\n" + root_txt)
 
-          # 2. ضبط compileSdk و minSdk في ملفات build.gradle الخاصة بالتطبيق
           for path in glob.glob("android/app/build.gradle*", recursive=True):
               with open(path, "r", encoding="utf-8") as f:
                   txt = f.read()
