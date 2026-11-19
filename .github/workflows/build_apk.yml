@@ -26,39 +26,25 @@ jobs:
           python3 -c '
           import glob, re
 
-          # ضبط compileSdkVersion و minSdkVersion في ملفات build.gradle
           for path in glob.glob("android/**/build.gradle*", recursive=True):
-              txt = open(path).read()
+              with open(path, "r", encoding="utf-8") as f:
+                  txt = f.read()
+
               if path.endswith(".kts"):
                   txt = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", "compileSdk = 34", txt)
                   txt = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 21", txt)
+                  if "compileSdk =" not in txt and "android {" in txt:
+                      txt = txt.replace("android {", "android {\n    compileSdk = 34", 1)
               else:
-                  txt = re.sub(r"compileSdkVersion\s+flutter\.compileSdkVersion", "compileSdkVersion 34", txt)
-                  txt = re.sub(r"compileSdk\s+flutter\.compileSdkVersion", "compileSdk 34", txt)
-                  txt = re.sub(r"minSdkVersion\s+flutter\.minSdkVersion", "minSdkVersion 21", txt)
-                  txt = re.sub(r"minSdk\s+flutter\.minSdkVersion", "minSdk 21", txt)
-              open(path, "w").write(txt)
+                  txt = re.sub(r"compileSdkVersion\s*=?\s*flutter\.compileSdkVersion", "compileSdkVersion 34", txt)
+                  txt = re.sub(r"compileSdk\s*=?\s*flutter\.compileSdkVersion", "compileSdk 34", txt)
+                  txt = re.sub(r"minSdkVersion\s*=?\s*flutter\.minSdkVersion", "minSdkVersion 21", txt)
+                  txt = re.sub(r"minSdk\s*=?\s*flutter\.minSdkVersion", "minSdk 21", txt)
+                  if "compileSdkVersion" not in txt and "compileSdk " not in txt and "android {" in txt:
+                      txt = txt.replace("android {", "android {\n    compileSdkVersion 34", 1)
 
-          # ضمان وجود compileSdkVersion 34 لأي subproject مثل :app_links
-          root_gradle = "android/build.gradle"
-          with open(root_gradle, "r") as f:
-              root_txt = f.read()
-          hook = """
-          subprojects { sub ->
-              afterEvaluate { project ->
-                  if (project.hasProperty("android")) {
-                      project.android {
-                          if (compileSdkVersion == null) {
-                              compileSdkVersion 34
-                          }
-                      }
-                  }
-              }
-          }
-          """
-          if "project.hasProperty(\"android\")" not in root_txt:
-              with open(root_gradle, "w") as f:
-                  f.write(root_txt + "\n" + hook)
+              with open(path, "w", encoding="utf-8") as f:
+                  f.write(txt)
           '
           flutter pub get
           flutter build apk --release
