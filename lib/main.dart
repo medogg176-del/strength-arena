@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 const String kSupabaseUrl = 'https://onxvcxnmrtidgzuokyds.supabase.co';
 const String kSupabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+const String kPhysiqueAsset = 'images (1).jpeg';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,8 +77,9 @@ class _SplashStartScreenState extends State<SplashStartScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/physique.jpg',
+            kPhysiqueAsset,
             fit: BoxFit.cover,
+            gaplessPlayback: true,
             errorBuilder: (_, __, ___) => Container(
               color: const Color(0xFF12161F),
               child: const Center(
@@ -97,7 +99,7 @@ class _SplashStartScreenState extends State<SplashStartScreen> {
                 colors: [
                   Colors.black.withOpacity(0.20),
                   Colors.black.withOpacity(0.55),
-                  Colors.black.withOpacity(0.94),
+                  Colors.black.withOpacity(0.95),
                 ],
                 stops: const [0.0, 0.55, 1.0],
               ),
@@ -134,180 +136,8 @@ class _SplashStartScreenState extends State<SplashStartScreen> {
                         SizedBox(
                           width: 28,
                           height: 28,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.8,
-                            color: Color(0xFFFF5A1F),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          'جاري التحميل...',
-                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  AnimatedOpacity(
-                    opacity: _showStartButton ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 350),
-                    child: _showStartButton
-                        ? SizedBox(
-                            width: double.infinity,
-                            height: 58,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const ChallengesHomeScreen(),
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF5A1F),
-                                foregroundColor: Colors.white,
-                                elevation: 10,
-                                shadowColor: const Color(0xFFFF5A1F).withOpacity(0.5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'بدء',
-                                    style: TextStyle(
-                                      fontSize: 21,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.play_arrow_rounded, size: 26),
-                                ],
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// شاشة التحديات الرئيسية مع عدّاد الأونلاين الحقيقي
-class ChallengesHomeScreen extends StatefulWidget {
-  const ChallengesHomeScreen({super.key});
-
-  @override
-  State<ChallengesHomeScreen> createState() => _ChallengesHomeScreenState();
-}
-
-class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
-  RealtimeChannel? _channel;
-  int _onlineCount = 0;
-  final String _sessionId = 'u_${DateTime.now().microsecondsSinceEpoch}';
-
-  @override
-  void initState() {
-    super.initState();
-    _connectPresence();
-  }
-
-  void _connectPresence() {
-    try {
-      final client = Supabase.instance.client;
-      final channel = client.channel(
-        'online-arena',
-        opts: const RealtimeChannelConfig(self: true),
-      );
-
-      void updateCount() {
-        final state = channel.presenceState();
-        int total = 0;
-        for (final entry in state) {
-          total += entry.presences.length;
-        }
-        if (mounted) {
-          setState(() => _onlineCount = total);
-        }
-      }
-
-      channel
-        ..onPresenceSync((_) => updateCount())
-        ..onPresenceJoin((_) => updateCount())
-        ..onPresenceLeave((_) => updateCount())
-        ..subscribe((status, [error]) async {
-          if (status == RealtimeSubscribeStatus.subscribed) {
-            await channel.track({
-              'session_id': _sessionId,
-              'at': DateTime.now().toIso8601String(),
-            });
-            updateCount();
-          }
-        });
-
-      _channel = channel;
-    } catch (_) {
-      if (mounted) {
-        setState(() => _onlineCount = 0);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    if (_channel != null) {
-      try {
-        Supabase.instance.client.removeChannel(_channel!);
-      } catch (_) {}
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final challenges = [
-      _ChallengeCardData(
-        title: 'تحدي الضغط',
-        subtitle: 'نزول كامل وزاوية كوع مضبوطة مع ثبات الجسم',
-        color: const Color(0xFFFF5A1F),
-        icon: Icons.fitness_center_rounded,
-      ),
-      _ChallengeCardData(
-        title: 'تحدي العقلة',
-        subtitle: 'صعود واضح للذقن وفرد الذراعين بالكامل بدون غش',
-        color: const Color(0xFF38BDF8),
-        icon: Icons.accessibility_new_rounded,
-      ),
-      _ChallengeCardData(
-        title: 'تحدي البطن',
-        subtitle: 'حركة جذع واضحة نحو الركبتين بدون تحايل',
-        color: const Color(0xFF22C55E),
-        icon: Icons.sports_gymnastics_rounded,
-      ),
-    ];
-
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF141821),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          
+Between,
                   children: [
                     const Text(
                       'التحديات',
