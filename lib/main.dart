@@ -1,14 +1,104 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-final ValueNotifier<Locale> appLocaleNotifier = ValueNotifier<Locale>(
-  const Locale('ar'),
-);
+enum AppLang { ar, en, fr, es, zh }
 
-void toggleAppLanguage() {
-  appLocaleNotifier.value = appLocaleNotifier.value.languageCode == 'ar'
-      ? const Locale('en')
-      : const Locale('ar');
+final ValueNotifier<AppLang> appLangNotifier = ValueNotifier<AppLang>(AppLang.ar);
+
+void cycleAppLanguage() {
+  final values = AppLang.values;
+  final nextIndex = (values.indexOf(appLangNotifier.value) + 1) % values.length;
+  appLangNotifier.value = values[nextIndex];
+}
+
+String _langLabel(AppLang lang) {
+  switch (lang) {
+    case AppLang.ar:
+      return 'العربية';
+    case AppLang.en:
+      return 'English';
+    case AppLang.fr:
+      return 'Français';
+    case AppLang.es:
+      return 'Español';
+    case AppLang.zh:
+      return '中文';
+  }
+}
+
+Map<String, String> _strings(AppLang lang) {
+  switch (lang) {
+    case AppLang.ar:
+      return {
+        'badge': 'ساحة التحديات والقوة',
+        'tagline': 'تحديات حقيقية، مستويات قوة، وترتيب محلي وعالمي',
+        'loading': 'جاري تجهيز الساحة...',
+        'loginTitle': 'ادخل الساحة وأثبت قوتك',
+        'loginSub': 'سجّل أرقامك، واجه منافسيك 1v1، واصعد في الترتيب',
+        'google': 'دخول فوري عبر Google',
+        'facebook': 'دخول فوري عبر Facebook',
+        'x': 'دخول فوري عبر X',
+        'apple': 'دخول فوري عبر Apple',
+        'footer': 'تقدّمك وأرقامك محفوظة لحسابك في كل تحدٍ',
+        'notice': 'تم اختيار الدخول عبر {p} — سنربط المصادقة الفعلية في الخطوة القادمة.',
+      };
+    case AppLang.en:
+      return {
+        'badge': 'GLOBAL STRENGTH ARENA',
+        'tagline': 'Head-to-head challenges, strength tiers & global rankings',
+        'loading': 'Preparing the arena...',
+        'loginTitle': 'Enter the Arena. Prove Your Power.',
+        'loginSub': 'Track your lifts, battle 1v1 rivals, and climb the ranks',
+        'google': 'Continue with Google',
+        'facebook': 'Continue with Facebook',
+        'x': 'Continue with X',
+        'apple': 'Continue with Apple',
+        'footer': 'Your stats, tiers, and wins stay locked to your profile',
+        'notice': '{p} sign-in selected — live auth connection comes next.',
+      };
+    case AppLang.fr:
+      return {
+        'badge': 'ARÈNE DE FORCE MONDIALE',
+        'tagline': 'Défis en face-à-face, niveaux de force et classements',
+        'loading': 'Préparation de l’arène...',
+        'loginTitle': 'Entrez dans l’Arène. Prouvez votre force.',
+        'loginSub': 'Suivez vos performances, affrontez en 1v1 et grimpez au classement',
+        'google': 'Continuer avec Google',
+        'facebook': 'Continuer avec Facebook',
+        'x': 'Continuer avec X',
+        'apple': 'Continuer avec Apple',
+        'footer': 'Vos records, niveaux et victoires restent liés à votre compte',
+        'notice': 'Connexion {p} sélectionnée — la liaison réelle arrive ensuite.',
+      };
+    case AppLang.es:
+      return {
+        'badge': 'ARENA DE FUERZA GLOBAL',
+        'tagline': 'Desafíos 1v1, niveles de fuerza y rankings mundiales',
+        'loading': 'Preparando la arena...',
+        'loginTitle': 'Entra a la Arena. Demuestra tu fuerza.',
+        'loginSub': 'Registra tus marcas, compite 1v1 y sube en el ranking',
+        'google': 'Continuar con Google',
+        'facebook': 'Continuar con Facebook',
+        'x': 'Continuar con X',
+        'apple': 'Continuar con Apple',
+        'footer': 'Tus marcas, niveles y victorias quedan guardados en tu perfil',
+        'notice': 'Acceso con {p} seleccionado — la conexión real viene después.',
+      };
+    case AppLang.zh:
+      return {
+        'badge': '全球力量竞技场',
+        'tagline': '一对一真实挑战、力量段位与全球排行榜',
+        'loading': '正在准备竞技场...',
+        'loginTitle': '踏入竞技场，证明你的实力',
+        'loginSub': '记录你的成绩、迎战 1v1 对手、攀登排行榜',
+        'google': '使用 Google 继续',
+        'facebook': '使用 Facebook 继续',
+        'x': '使用 X 继续',
+        'apple': '使用 Apple 继续',
+        'footer': '你的数据、段位与胜场将永久绑定至个人档案',
+        'notice': '已选择通过 {p} 登录 — 真实身份验证将在下一步接入。',
+      };
+  }
 }
 
 void main() {
@@ -21,14 +111,13 @@ class StrengthArenaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Locale>(
-      valueListenable: appLocaleNotifier,
-      builder: (context, locale, _) {
-        final isRtl = locale.languageCode == 'ar';
+    return ValueListenableBuilder<AppLang>(
+      valueListenable: appLangNotifier,
+      builder: (context, lang, _) {
+        final isRtl = lang == AppLang.ar;
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Strength Arena',
-          locale: locale,
           theme: ThemeData(
             brightness: Brightness.dark,
             scaffoldBackgroundColor: const Color(0xFF090B0E),
@@ -140,10 +229,10 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Locale>(
-      valueListenable: appLocaleNotifier,
-      builder: (context, locale, _) {
-        final ar = locale.languageCode == 'ar';
+    return ValueListenableBuilder<AppLang>(
+      valueListenable: appLangNotifier,
+      builder: (context, lang, _) {
+        final t = _strings(lang);
 
         return Scaffold(
           body: Stack(
@@ -164,7 +253,7 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: InkWell(
-                      onTap: toggleAppLanguage,
+                      onTap: cycleAppLanguage,
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -179,7 +268,7 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                           ),
                         ),
                         child: Text(
-                          ar ? 'English' : 'العربية',
+                          _langLabel(lang),
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -210,7 +299,7 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                           ),
                         ),
                         child: Text(
-                          ar ? 'ساحة التحديات والقوة' : 'GLOBAL STRENGTH ARENA',
+                          t['badge']!,
                           style: const TextStyle(
                             fontSize: 11,
                             letterSpacing: 1.1,
@@ -232,9 +321,7 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        ar
-                            ? 'تحديات حقيقية، مستويات قوة، وترتيب محلي وعالمي'
-                            : 'Head-to-head challenges, strength tiers & global rankings',
+                        t['tagline']!,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13.5,
@@ -267,9 +354,7 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    ar
-                                        ? 'جاري تجهيز الساحة...'
-                                        : 'Preparing the arena...',
+                                    t['loading']!,
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.white.withOpacity(0.70),
@@ -304,10 +389,12 @@ class _SplashArenaScreenState extends State<SplashArenaScreen>
 class LoginArenaScreen extends StatelessWidget {
   const LoginArenaScreen({super.key});
 
-  void _showProviderNotice(BuildContext context, String provider, bool ar) {
-    final msg = ar
-        ? 'تم اختيار الدخول عبر $provider — سنربط المصادقة الفعلية في الخطوة القادمة.'
-        : '$provider sign-in selected — live auth connection comes next.';
+  void _showProviderNotice(
+    BuildContext context,
+    String provider,
+    Map<String, String> t,
+  ) {
+    final msg = t['notice']!.replaceAll('{p}', provider);
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -320,10 +407,10 @@ class LoginArenaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Locale>(
-      valueListenable: appLocaleNotifier,
-      builder: (context, locale, _) {
-        final ar = locale.languageCode == 'ar';
+    return ValueListenableBuilder<AppLang>(
+      valueListenable: appLangNotifier,
+      builder: (context, lang, _) {
+        final t = _strings(lang);
 
         return Scaffold(
           body: Stack(
@@ -357,7 +444,7 @@ class LoginArenaScreen extends StatelessWidget {
                             ),
                           ),
                           InkWell(
-                            onTap: toggleAppLanguage,
+                            onTap: cycleAppLanguage,
                             borderRadius: BorderRadius.circular(20),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -372,7 +459,7 @@ class LoginArenaScreen extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                ar ? 'English' : 'العربية',
+                                _langLabel(lang),
                                 style: const TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w600,
@@ -425,7 +512,7 @@ class LoginArenaScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              ar ? 'سجّل دخولك إلى الساحة' : 'Sign In to the Arena',
+                              t['loginTitle']!,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 22,
@@ -434,9 +521,7 @@ class LoginArenaScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              ar
-                                  ? 'احفظ مستواك، دولتك، ونتائج تحدياتك 1v1'
-                                  : 'Save your strength tier, country & 1v1 records',
+                              t['loginSub']!,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
@@ -445,50 +530,41 @@ class LoginArenaScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 24),
                             _SocialAuthButton(
-                              label: ar
-                                  ? 'المتابعة باستخدام Google'
-                                  : 'Continue with Google',
+                              label: t['google']!,
                               icon: Icons.g_mobiledata_rounded,
                               accentColor: const Color(0xFFEA4335),
                               onTap: () =>
-                                  _showProviderNotice(context, 'Google', ar),
+                                  _showProviderNotice(context, 'Google', t),
                             ),
                             const SizedBox(height: 12),
                             _SocialAuthButton(
-                              label: ar
-                                  ? 'المتابعة باستخدام Facebook'
-                                  : 'Continue with Facebook',
+                              label: t['facebook']!,
                               icon: Icons.facebook_rounded,
                               accentColor: const Color(0xFF1877F2),
                               onTap: () =>
-                                  _showProviderNotice(context, 'Facebook', ar),
+                                  _showProviderNotice(context, 'Facebook', t),
                             ),
                             const SizedBox(height: 12),
                             _SocialAuthButton(
-                              label: ar ? 'المتابعة باستخدام X' : 'Continue with X',
+                              label: t['x']!,
                               icon: Icons.alternate_email_rounded,
                               accentColor: Colors.white,
-                              onTap: () =>
-                                  _showProviderNotice(context, 'X', ar),
+                              onTap: () => _showProviderNotice(context, 'X', t),
                             ),
                             const SizedBox(height: 12),
                             _SocialAuthButton(
-                              label: ar
-                                  ? 'المتابعة باستخدام Apple'
-                                  : 'Continue with Apple',
+                              label: t['apple']!,
                               icon: Icons.apple_rounded,
                               accentColor: Colors.white,
                               onTap: () =>
-                                  _showProviderNotice(context, 'Apple', ar),
+                                  _showProviderNotice(context, 'Apple', t),
                             ),
                           ],
                         ),
                       ),
                       const Spacer(),
                       Text(
-                        ar
-                            ? 'حساب شخصي مرتبط بتحدياتك وترتيبك فقط'
-                            : 'Personal account tied to your challenges & rank',
+                        t['footer']!,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
