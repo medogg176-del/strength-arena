@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'ai_referee_screen.dart';
+import 'progression_ranks.dart';
 
 const String kSupabaseUrl = 'https://onxvcxnmrtidgzuokyds.supabase.co';
 const String kSupabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
@@ -66,7 +68,6 @@ class _StrengthArenaAppState extends State<StrengthArenaApp> {
   }
 }
 
-/// قاموس الترجمة (عربي / إنجليزي)
 class AppStrings {
   final bool isAr;
   const AppStrings(this.isAr);
@@ -76,7 +77,8 @@ class AppStrings {
     return AppStrings(code == 'ar');
   }
 
-  String get tagline => isAr ? '1v1 • ضغط • عقلة • بطن' : '1v1 • PUSH-UPS • PULL-UPS • SIT-UPS';
+  String get tagline =>
+      isAr ? '1v1 • ضغط • عقلة • بطن' : '1v1 • PUSH-UPS • PULL-UPS • SIT-UPS';
   String get loading => isAr ? 'جاري التحميل...' : 'Loading...';
   String get start => isAr ? 'بدء' : 'START';
   String get challengesTitle => isAr ? 'التحديات' : 'CHALLENGES';
@@ -110,16 +112,13 @@ class AppStrings {
       ? 'تحكيم الذكاء الاصطناعي: الكاميرا تراقب عدّاتك فقط والخصم لا يرى الفيديو'
       : 'AI Referee: Only AI inspects your camera; opponent never sees your video';
 
-  String get readyForCamera => isAr
-      ? 'جاهز لخطوة الكاميرا وعدّ الذكاء الاصطناعي'
-      : 'Ready for camera & AI rep counter';
-
+  String get startMatchNow =>
+      isAr ? 'ابدأ التحدي بالكاميرا الآن' : 'START CAMERA AI MATCH';
   String get cancelSearch => isAr ? 'إلغاء البحث' : 'Cancel';
   String get youLabel => isAr ? 'أنت' : 'YOU';
   String get opponentLabel => isAr ? 'خصم عشوائي (1v1)' : 'RANDOM OPPONENT (1v1)';
 }
 
-/// 1. شاشة البداية
 class SplashStartScreen extends StatefulWidget {
   const SplashStartScreen({super.key});
 
@@ -245,7 +244,8 @@ class _SplashStartScreenState extends State<SplashStartScreen> {
                                 backgroundColor: const Color(0xFFFF5A1F),
                                 foregroundColor: Colors.white,
                                 elevation: 10,
-                                shadowColor: const Color(0xFFFF5A1F).withOpacity(0.5),
+                                shadowColor:
+                                    const Color(0xFFFF5A1F).withOpacity(0.5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),
                                 ),
@@ -278,7 +278,6 @@ class _SplashStartScreenState extends State<SplashStartScreen> {
   }
 }
 
-/// 2. شاشة التحديات + البروفايل (الاسم + الصورة الخاصة) + تبديل اللغة
 class ChallengesHomeScreen extends StatefulWidget {
   const ChallengesHomeScreen({super.key});
 
@@ -289,20 +288,27 @@ class ChallengesHomeScreen extends StatefulWidget {
 class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
   String _playerName = '';
   String? _avatarPath;
+  int _xp = 0;
+  int _wins = 0;
+  String _countryCode = 'EG';
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadAllData();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadAllData() async {
     final prefs = await SharedPreferences.getInstance();
+    final stats = await ProgressionService.loadStats();
     if (!mounted) return;
     setState(() {
       _playerName = prefs.getString('player_name') ?? '';
       _avatarPath = prefs.getString('player_avatar');
+      _xp = stats.xp;
+      _wins = stats.wins;
+      _countryCode = stats.countryCode;
     });
   }
 
@@ -370,10 +376,7 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
                     child: Stack(
                       alignment: Alignment.bottomRight,
                       children: [
-                        _PlayerAvatar(
-                          imagePath: tempAvatar,
-                          size: 86,
-                        ),
+                        _PlayerAvatar(imagePath: tempAvatar, size: 86),
                         Container(
                           padding: const EdgeInsets.all(7),
                           decoration: const BoxDecoration(
@@ -440,14 +443,35 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
     );
   }
 
+  void _openRankings(String displayName) {
+    final s = AppStrings.of(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => RankingsSheet(
+        playerName: displayName,
+        initialCountryCode: _countryCode,
+        userXp: _xp,
+        userWins: _wins,
+        isAr: s.isAr,
+        onCountryChanged: (code) => setState(() => _countryCode = code),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
-    final displayName = _playerName.trim().isEmpty ? s.defaultPlayerName : _playerName.trim();
+    final displayName =
+        _playerName.trim().isEmpty ? s.defaultPlayerName : _playerName.trim();
+    final rank = ProgressionService.rankForXp(_xp);
+    final countryText = ProgressionService.countryName(_countryCode, s.isAr);
 
     final challenges = [
       _ChallengeCardData(
         id: 'pushup',
+        type: ChallengeType.pushup,
         title: s.pushupTitle,
         subtitle: s.pushupSub,
         color: const Color(0xFFFF5A1F),
@@ -455,6 +479,7 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
       ),
       _ChallengeCardData(
         id: 'pullup',
+        type: ChallengeType.pullup,
         title: s.pullupTitle,
         subtitle: s.pullupSub,
         color: const Color(0xFF38BDF8),
@@ -462,6 +487,7 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
       ),
       _ChallengeCardData(
         id: 'situp',
+        type: ChallengeType.situp,
         title: s.situpTitle,
         subtitle: s.situpSub,
         color: const Color(0xFF22C55E),
@@ -499,7 +525,6 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // شريط البروفايل + زر اللغة
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
@@ -528,10 +553,11 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
                                     ),
                                   ),
                                   Text(
-                                    s.editProfile,
-                                    style: const TextStyle(
-                                      color: Color(0xFF94A3B8),
+                                    '$countryText • LVL ${rank.level} (${rank.title(s.isAr)})',
+                                    style: TextStyle(
+                                      color: rank.color,
                                       fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
@@ -540,19 +566,27 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
                           ),
                         ),
                         const Spacer(),
+                        IconButton(
+                          onPressed: () => _openRankings(displayName),
+                          icon: const Icon(Icons.leaderboard_rounded, color: Color(0xFFF59E0B)),
+                          tooltip: s.isAr ? 'الترتيب والمستويات' : 'Rankings',
+                        ),
                         OutlinedButton(
-                          onPressed: () => StrengthArenaApp.of(context)?.toggleLanguage(),
+                          onPressed: () =>
+                              StrengthArenaApp.of(context)?.toggleLanguage(),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: BorderSide(color: Colors.white.withOpacity(0.22)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                           ),
                           child: Text(
                             s.langButton,
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w800, fontSize: 13),
                           ),
                         ),
                       ],
@@ -575,8 +609,8 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
                       itemBuilder: (context, index) {
                         final item = challenges[index];
                         return InkWell(
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => MatchmakingWaitingScreen(
@@ -586,6 +620,7 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
                                 ),
                               ),
                             );
+                            _loadAllData();
                           },
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
@@ -652,7 +687,6 @@ class _ChallengesHomeScreenState extends State<ChallengesHomeScreen> {
   }
 }
 
-/// 3. شاشة انتظار الخصم العشوائي (1v1)
 class MatchmakingWaitingScreen extends StatefulWidget {
   final _ChallengeCardData challenge;
   final String playerName;
@@ -666,7 +700,8 @@ class MatchmakingWaitingScreen extends StatefulWidget {
   });
 
   @override
-  State<MatchmakingWaitingScreen> createState() => _MatchmakingWaitingScreenState();
+  State<MatchmakingWaitingScreen> createState() =>
+      _MatchmakingWaitingScreenState();
 }
 
 class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
@@ -733,7 +768,6 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // بطاقة المواجهة 1v1 (أنت ضد خصم عشوائي)
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -750,11 +784,13 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
                         const SizedBox(height: 8),
                         Text(
                           widget.playerName,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w800),
                         ),
                         Text(
                           s.youLabel,
-                          style: const TextStyle(color: Color(0xFF4ADE80), fontSize: 12),
+                          style: const TextStyle(
+                              color: Color(0xFF4ADE80), fontSize: 12),
                         ),
                       ],
                     ),
@@ -776,24 +812,25 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white.withOpacity(0.15)),
                           ),
-                          child: const Icon(Icons.person_search_rounded, color: Colors.white70, size: 32),
+                          child: const Icon(Icons.person_search_rounded,
+                              color: Colors.white70, size: 32),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           s.opponentLabel,
-                          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
+                          style: const TextStyle(
+                              color: Colors.white70, fontWeight: FontWeight.w700),
                         ),
                         Text(
                           '${_elapsedSeconds}s',
-                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                          style: const TextStyle(
+                              color: Color(0xFF94A3B8), fontSize: 12),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-
-              // مؤشر البحث + تنبيه خصوصية تحكيم الذكاء الاصطناعي
               Column(
                 children: [
                   CircularProgressIndicator(color: widget.challenge.color),
@@ -818,13 +855,12 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
                     child: Text(
                       s.aiRefereeNote,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
+                      style:
+                          const TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
                     ),
                   ),
                 ],
               ),
-
-              // أزرار الإلغاء أو الانتقال لخطوة الكاميرا القادمة
               Column(
                 children: [
                   SizedBox(
@@ -832,10 +868,16 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
                     height: 52,
                     child: ElevatedButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(s.readyForCamera),
-                            backgroundColor: const Color(0xFF1E2433),
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AiRefereeMatchScreen(
+                              challengeType: widget.challenge.type,
+                              challengeTitle: widget.challenge.title,
+                              accentColor: widget.challenge.color,
+                              playerName: widget.playerName,
+                              isAr: s.isAr,
+                            ),
                           ),
                         );
                       },
@@ -847,7 +889,7 @@ class _MatchmakingWaitingScreenState extends State<MatchmakingWaitingScreen> {
                         ),
                       ),
                       child: Text(
-                        s.readyForCamera,
+                        s.startMatchNow,
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),
@@ -888,7 +930,8 @@ class _PlayerAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: const Color(0xFF1E2433),
-        border: Border.all(color: const Color(0xFFFF5A1F).withOpacity(0.6), width: 2),
+        border: Border.all(
+            color: const Color(0xFFFF5A1F).withOpacity(0.6), width: 2),
       ),
       child: ClipOval(
         child: hasFile
@@ -908,6 +951,7 @@ class _PlayerAvatar extends StatelessWidget {
 
 class _ChallengeCardData {
   final String id;
+  final ChallengeType type;
   final String title;
   final String subtitle;
   final Color color;
@@ -915,6 +959,7 @@ class _ChallengeCardData {
 
   const _ChallengeCardData({
     required this.id,
+    required this.type,
     required this.title,
     required this.subtitle,
     required this.color,
