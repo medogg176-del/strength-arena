@@ -35,7 +35,7 @@ jobs:
           root_gradle = Path("android/build.gradle")
           if root_gradle.exists():
               txt = root_gradle.read_text(encoding="utf-8")
-              ext_block = "ext {\n    compileSdkVersion = 34\n    minSdkVersion = 21\n    targetSdkVersion = 34\n}\n\n"
+              ext_block = "ext {\n    compileSdkVersion = 34\n    minSdkVersion = 21\n    targetSdkVersion = 34\n    ndkVersion = \"25.1.8937393\"\n}\n\n"
               if "compileSdkVersion = 34" not in txt:
                   txt = ext_block + txt
               txt = re.sub(r"com\.android\.tools\.build:gradle:[0-9.+]+", "com.android.tools.build:gradle:8.3.2", txt)
@@ -55,6 +55,10 @@ jobs:
               txt = txt.replace("flutter.compileSdkVersion", "34")
               txt = txt.replace("flutter.minSdkVersion", "21")
               txt = txt.replace("flutter.targetSdkVersion", "34")
+              txt = txt.replace("flutter.ndkVersion", "\"25.1.8937393\"")
+              if p.name == "build.gradle" and "android/app/build.gradle" in str(p).replace("\\", "/"):
+                  if "ndkVersion" not in txt:
+                      txt = re.sub(r"(android\s*\{)", r"\1\n    ndkVersion \"25.1.8937393\"", txt, count=1)
               p.write_text(txt, encoding="utf-8")
           '
           flutter pub get
