@@ -22,6 +22,13 @@ jobs:
         run: |
           rm -rf android
           flutter create . --project-name strength_arena --platforms=android --org com.strengtharena
+          python3 -c '
+          p = "android/app/build.gradle"
+          s = open(p).read()
+          if "compileSdkVersion" not in s:
+              s = s.replace("android {", "android {\n    compileSdkVersion 34", 1)
+          open(p, "w").write(s)
+          '
           flutter pub get
           flutter build apk --release
       - uses: actions/upload-artifact@v4
